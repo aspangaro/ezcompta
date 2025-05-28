@@ -26,7 +26,7 @@
 //if (! defined('NOCSRFCHECK'))              define('NOCSRFCHECK', '1');				// Do not check CSRF attack (test on referer + on token if option MAIN_SECURITY_CSRF_WITH_TOKEN is on).
 //if (! defined('NOTOKENRENEWAL'))           define('NOTOKENRENEWAL', '1');				// Do not roll the Anti CSRF token (used if MAIN_SECURITY_CSRF_WITH_TOKEN is on)
 //if (! defined('NOSTYLECHECK'))             define('NOSTYLECHECK', '1');				// Do not check style html tag into posted data
-//if (! defined('NOREQUIREMENU'))            define('NOREQUIREMENU', '1');				// If there is no need to load and show top and left menu
+if (! defined('NOREQUIREMENU'))            define('NOREQUIREMENU', '1');				// If there is no need to load and show top and left menu
 //if (! defined('NOREQUIREHTML'))            define('NOREQUIREHTML', '1');				// If we don't need to load the html.form.class.php
 //if (! defined('NOREQUIREAJAX'))            define('NOREQUIREAJAX', '1');       	  	// Do not load ajax.lib.php library
 //if (! defined("NOLOGIN"))                  define("NOLOGIN", '1');					// If this page is public (can be called outside logged session). This include the NOIPCHECK too.
@@ -42,23 +42,83 @@ $res=0;
 if (! $res && file_exists("../main.inc.php")): $res=@include '../main.inc.php'; endif;
 if (! $res && file_exists("../../main.inc.php")): $res=@include '../../main.inc.php'; endif;
 
-
-/************************************************
-*  FICHIERS NECESSAIRES
-************************************************/
-
 // Protection if external user
 if ($user->socid > 0): accessforbidden(); endif;
+
+require_once DOL_DOCUMENT_ROOT.'/accountancy/class/accountancysystem.class.php';
+require_once DOL_DOCUMENT_ROOT.'/accountancy/class/accountingaccount.class.php';
+dol_include_once('/ezcompta/class/ezcompta.class.php');
+
+$langs->load('ezcompta@ezcompta');
 
 
 /*******************************************************************
 * VARIABLES
 ********************************************************************/
 $action = GETPOST('action');
+$startwith = GETPOSTINT('startwith') ? : 1;
+$id = GETPOSTINT('id');
+$accountnumber = GETPOST('accountnumber', 'alpha');
+
+$accountancySystem = new AccountancySystem($db);
+$accountancySystem->fetch(getDolGlobalInt('CHARTOFACCOUNTS'));
+
+$ezcompta = new EzCompta($db);
+$accounting = new AccountingAccount($db);
+
+// Get unordered list of accounting accounts
+$list = $ezcompta->getAccountingAccountsByStartNumber($startwith, $accountancySystem->pcg_version);
+
+// Sort List
+$listorder = $ezcompta->makeListOfAccountingAccountsByAccountNumber($list);
+
+// Get First Level Accounting Accounts label
+$firstLevel = $ezcompta->getAccountingAccountsFirstLevel($accountancySystem->pcg_version);
+
+// Get maximum length for this accounting system
+$maxNumberAccountingAccounts = $ezcompta->getMaximumLengthForAccountingAccounts($accountancySystem->pcg_version);
+
+//
+$permissiontoadd = $user->hasRight('accounting', 'chartofaccount');
+$permissiontodelete = $user->hasRight('accounting', 'chartofaccount');
 
 /*******************************************************************
 * ACTIONS
 ********************************************************************/
+
+if ($action == 'editaccountingaccountlabel') {
+	var_dump($_POST);
+}
+
+// Disable accounting account
+if ($action == 'disable' && $permissiontoadd) {
+	if ($accounting->fetch($id)) {
+		$mode = GETPOSTINT('mode');
+		$result = $accounting->accountDeactivate($id, $mode);
+		if ($result < 0) {
+			setEventMessages($accounting->error, $accounting->errors, 'errors');
+		}
+		header('Location:'.$_SERVER['PHP_SELF'].'?startwith='.$startwith);
+		exit();
+	}
+
+	$action = 'update';
+} elseif ($action == 'enable' && $permissiontoadd) {
+	if ($accounting->fetch($id)) {
+		$mode = GETPOSTINT('mode');
+		$result = $accounting->accountActivate($id, $mode);
+		if ($result < 0) {
+			setEventMessages($accounting->error, $accounting->errors, 'errors');
+		}
+		header('Location:'.$_SERVER['PHP_SELF'].'?startwith='.$startwith);
+		exit();
+	}
+}
+
+/*if (!empty($accountnumber)) {
+	$expl = strlen($accountnumber);
+	var_dump($expl);
+}*/
 
 /***************************************************
 * VIEW
@@ -67,215 +127,317 @@ $js_array = array();
 $css_array = array('/ezcompta/assets/css/ezcompta.css');
 llxHeader('', $langs->trans('EzCompta'), '', '', 0, 0, $js_array, $css_array, '', 'mod-ezcompta page-index');
 
-//print load_fiche_titre($langs->trans('EzCompta'), '', 'fa-book_fas_#681bb5');
+print '<div id="ezcompta-main-wrapper">';
+	print '<div class="ezcompta-side-wrapper">';
+		print '<form action="#" method="POST">';
+			print '<div class="searchicon"><span class="fas fa-search"></span></div>';
+			print '<input type="text" name="" placeholder="'.$langs->trans('Search').'">';
+		print '</form>';
+		print '<ul>';
+		for ($i=1; $i < 10; $i++) {
+			$existFolder = false;
+			if (isset($firstLevel[$i])) {
+				$existFolder = true;
+				$group = $firstLevel[$i];
+				$groupclass = ($startwith == $i) ? 'active' : '';
+				$grouplabel = (!empty($group['labelshort'])) ? $group['labelshort'] : $group['label'];
 
+				print '<li>';
+					print '<a href="'.$_SERVER['PHP_SELF'].'?startwith='.$i.'" class="'.$groupclass.'"><span class="fas fa-folder paddingright"></span> '.$i.'. '.$grouplabel.' <span class="badge marginleftonlyshort">'.$group['nbitems'].'</span></a>';
+				print '</li>';
+			}		}
+		print '</ul>';
+	print '</div>';
+	print '<div class="ezcompta-content-wrapper">';
+		print '<h1>'.$startwith.'. '.$firstLevel[$startwith]['label'].'</h1>';
+		print '<p class="opacitymedium">Description de cette partie comptable, unde Rufinus ea tempestate praefectus praetorio ad discrimen trusus est ultimum. ire enim ipse compellebatur ad militem, quem exagitabat inopia simul et feritas, et alioqui coalito more in ordinarias dignitates asperum semper et saevum, ut satisfaceret atque monstraret, quam ob causam annonae convectio sit impedita.</p>';
+
+		$level = 2;
+		print '<ul class="ezcompta-listaccount">';
+		for ($i=0; $i < 10; $i++) {
+
+			$current = $startwith.$i;
+			$accountExist = false;
+			$dataLabel = '';
+			//$dataParent = ;
+			if (isset($listorder[$current])) {
+				$accountExist = true;
+				$currentAccount = $listorder[$current];
+				$dataLabel = $currentAccount->label;
+			}
+
+			$editLine = ($action == 'editaccount' && $accountnumber == $current) ? true : false;
+			$nbX = $ezcompta->maximumDepth - strlen($current);
+
+			print '<li>';
+				print '<form class="ezcompta-editline-form account-cardline-header" method="POST" action="'.$_SERVER['PHP_SELF'].'?startwith='.$startwith.'" id="line-'.$current.'" data-label="'.$dataLabel.'" data-level="'.$level.'" data-parent="'.$firstLevel[$startwith]['id'].'" data-accountexist="'.($accountExist ? 1 : 0).'" data-pcgtype="'.$firstLevel[$startwith]['pcg_type'].'">';
+				if ($editLine) {
+					print '<div class="cardline-header-title">';
+						print '<span class="fas fa-clipboard-list paddingright"></span> <b>'.$current.'<span class="opacitymedium">'.$ezcompta->showX($nbX).'</span></b> - ';
+						print '<span class="account-label"><input type="text" name="accountlabel" value="'.$currentAccount->label.'" class="minwidth500 input-nobottom"></span>';
+					print '</div>';
+					print '<div class="cardline-header-actions">';
+						print '<input type="hidden" name="action" value="editaccountingaccountlabel">';
+						print '<input type="hidden" name="token" value="'.newToken().'">';
+						print '<input type="hidden" name="accountnumber" value="'.$current.'">';
+						print '<a class="button-editline cancel" href="'.$_SERVER['PHP_SELF'].'?startwith='.$startwith.'" data-target="'.$current.'"><span class="fas fa-times paddingright"></span></a> ';
+						print '<button class="button-editline" type="submit"  data-target="'.$current.'"><span class="fas fa-check paddingleft"></span></button>';
+					print '</div>';
+				} else {
+					print '<div class="cardline-header-title">';
+						print '<span class="toggle-icon">';
+							if ($accountExist && $currentAccount->active) {
+								print '<a class="reposition toggle-account" href="'.$_SERVER['PHP_SELF'].'?id='.$currentAccount->id.'&action=disable&mode=0&token='.newToken().'" data-toggle="disable" data-target="'.$current.'" data-accountid="'.$currentAccount->id.'">';
+									print '<span class="fas fa-toggle-on paddingright" style="color: #681bb5;font-size: 1em;"></span>';
+								print '</a>';
+							} else if ($accountExist && !$currentAccount->active) {
+								print '<a class="reposition toggle-account" href="'.$_SERVER['PHP_SELF'].'?id='.$currentAccount->id.'&action=enable&mode=0&token='.newToken().'" data-toggle="enable" data-target="'.$current.'" data-accountid="'.$currentAccount->id.'">';
+									print '<span class="fas fa-toggle-off paddingright" style="color: #ccc;font-size: 1em;"></span>';
+								print '</a>';
+							} else {
+								print '<span class="fas fa-toggle-off paddingright" style="color: #ccc;font-size: 1em;"></span>';
+							}
+							//print '<span class="fas fa-clipboard-list paddingright"></span> ';
+						print '</span>';
+						print '<b>'.$current.'<span class="opacitymedium">'.$ezcompta->showX($nbX).'</span></b> - ';
+						print '<span class="account-label">';
+							if($accountExist) {
+								print $currentAccount->label;
+							} else {
+								print '<span class="opacitymedium">'.$langs->trans('AccountingAccountNotExist').'</span>';
+							}
+						print '</span>';
+						print '<a href="'.$_SERVER['PHP_SELF'].'?action=editaccount&accountnumber='.$current.'&token='.newToken().'"><span class="fas fa-pen edit-account-label" data-target="'.$current.'" style="margin-left:12px;color:#ddd;"></span></a>';
+					print '</div>';
+					print '<div class="cardline-header-actions">';
+						if ($accountExist) {
+							print '<span class="fas fa-ellipsis-v paddingright paddingleft"></span>';
+							print '<span class="fas fa-chevron-down paddingleft toggleview" data-target="'.$current.'" style="margin-left:12px;"></span>';
+						}
+					print '</div>';
+				}
+				print '</form>';
+				print '<ul class="firstlevel" id="subaccountlist-'.$current.'">';
+					$dataParent = $accountExist ? $currentAccount->id : 0;
+					if ($accountExist) {
+						print $ezcompta->recursiveListAccountingAccounts($current, $listorder, $action, $level, $dataParent, $firstLevel[$startwith]['pcg_type']);
+					}
+				print '</ul>';
+			//print '</form>';
+			print '</li>';
+		}
+		print '</ul>';
+	print '</div>';
+	/*print '<div style="position:fixed;top:0;right:0;bottom:0;background:#25f;width:520px;box-sizing:border-box;padding:24px 42px;">';
+		print '<h2>XXXXXX - Nom du compte</h2>';
+		print '<div>Label: LABEL</div>';
+		print '<div>LabelShort: LABELSHORT</div>';
+		print '<div>CompteParent: COMPTEPARENT</div>';
+		print '<div>GroupeComptable: GroupeComptable</div>';
+		print '<div>GroupePerso: GroupePerso</div>';
+	print '</div>';*/
+print '</div>';
 ?>
 
-<div id="ezcompta-main-wrapper">
-	<div class="ezcompta-side-wrapper">
-		<form action="#" method="POST">
-			<div class="searchicon"><span class="fas fa-search"></span></div>
-			<input type="text" name="" placeholder="<?php echo $langs->trans('Search'); ?>">
-		</form>
-		<ul>
-			<li><a href=""><span class="fas fa-folder paddingright"></span> 1. Capitaux <span class="badge marginleftonlyshort">92</span></a></li>
-			<li><a href="" class="active"><span class="fas fa-folder paddingright"></span> 2. Immobilisation <span class="badge marginleftonlyshort">144</span></a></li>
-			<li><a href=""><span class="fas fa-folder paddingright"></span> 3. Stock <span class="badge marginleftonlyshort">38</span></a></li>
-			<li><a href=""><span class="fas fa-folder paddingright"></span> 4. Tiers <span class="badge marginleftonlyshort">158</span></a></li>
-			<li><a href=""><span class="fas fa-folder paddingright"></span> 5. Financiers <span class="badge marginleftonlyshort">49</span></a></li>
-			<li><a href=""><span class="fas fa-folder paddingright"></span> 6. Charges <span class="badge marginleftonlyshort">235</span></a></li>
-			<li><a href=""><span class="fas fa-folder paddingright"></span> 7. Produits <span class="badge marginleftonlyshort">118</span></a></li>
-			<li><a href=""><span class="fas fa-folder paddingright"></span> 8. Spéciaux <span class="badge marginleftonlyshort">24</span></a></li>
-		</ul>
-	</div>
-	<div class="ezcompta-content-wrapper">
+<script type="text/javascript" nonce="<?php echo getNonce(); ?>">
+	$(document).ready(function(){
 
-		<h1>2. Immobilisation</h1>
-		<p class="opacitymedium">Unde Rufinus ea tempestate praefectus praetorio ad discrimen trusus est ultimum. ire enim ipse compellebatur ad militem, quem exagitabat inopia simul et feritas, et alioqui coalito more in ordinarias dignitates asperum semper et saevum, ut satisfaceret atque monstraret, quam ob causam annonae convectio sit impedita.</p>
+		var startwith = '<?php echo $startwith; ?>';
+		var token = '<?php echo newToken(); ?>';
+		var link = '<?php echo dol_buildpath('ezcompta/index.php?startwith='.$startwith, 1); ?>';
+		var emptylabel = '<span class="opacitymedium"><?php echo $langs->transnoentities('AccountingAccountNotExist'); ?></span>';
 
-		<ul class="ezcompta-listaccount">
-			<li>
-				<div class="account-cardline-header">
-					<div class="cardline-header-title">
-						<span class="fas fa-clipboard-list paddingright"></span> <b>20<span class="opacitymedium">XXXX</span></b> - Immobilisation incorporelles et frais d’établissement
-						<a href="#"><span class="fas fa-pen" style="margin-left:12px;color:#ddd;"></span></a>
-					</div>
-					<div class="cardline-header-actions">
-						<span style="margin-right: 16px">
-							<span class="badge badge-folder"><span class="fas fa-folder paddingright"></span> 5</span>
-							<span class="badge badge-items"><span class="fas fa-clipboard-list paddingright"></span> 42</span>
-						</span>
-						<span class="fas fa-chevron-down paddingright paddingleft"></span>
-					</div>
-				</div>
-			</li>
-			<li>
-				<div class="account-cardline-header">
-					<div class="cardline-header-title">
-						<span class="fas fa-clipboard-list paddingright"></span> <b>21<span class="opacitymedium">XXXX</span></b> - Immobilisations corporelles
-						<a href="#"><span class="fas fa-pen" style="margin-left:12px;color:#ddd;"></span></a>
-					</div>
-					<div class="cardline-header-actions">
-						<span style="margin-right: 16px">
-							<span class="badge badge-folder"><span class="fas fa-folder paddingright"></span> 6</span>
-							<span class="badge badge-items"><span class="fas fa-clipboard-list paddingright"></span> 32</span>
-						</span>
-						<span class="fas fa-chevron-up paddingright paddingleft" style="color:#b0bb29"></span>
-					</div>
-				</div>
-				<ul class="open">
+		// ENABLE - DISABLE
+		$(document).on('click', '.toggle-account', function(e){
+			e.preventDefault();
 
-					<?php
+			var toggleaction = $(this).data('toggle');
+			var accountid = $(this).data('accountid');
+			var target = $(this).data('target');
 
-					$list = array(
-						'211' => 'Terrains',
-						'212' => 'Agencements et aménagements de terrains',
-						'213' => 'Constructions',
-						'214' => 'Construction sur sol d’autrui',
-						'215' => 'Installations techniques, matériels et outillages industriels',
-						'216' => '',
-						'217' => '',
-						'218' => 'Autres immobilisations corporelles',
-						'219' => '',
-					);
+			var toggle_on = '';
+			toggle_on += '<a class="reposition toggle-account" href="'+link+'&id='+accountid+'&action=disable&mode=0&token='+token+'" data-toggle="disable" data-target="'+target+'" data-accountid="'+accountid+'">';
+			toggle_on += '<span class="fas fa-toggle-on paddingright" style="color: #681bb5;font-size: 1em;"></span>';
+			toggle_on += '</a>';
 
-					foreach ($list as $accountnumber => $accountlabel) {
+			var toggle_off = '';
+			toggle_off += '<a class="reposition toggle-account" href="'+link+'&id='+accountid+'&action=enable&mode=0&token='+token+'" data-toggle="enable" data-target="'+target+'" data-accountid="'+accountid+'">';
+			toggle_off += '<span class="fas fa-toggle-off paddingright" style="color: #ccc;font-size: 1em;"></span>';
+			toggle_off += '</a>';
 
-						$coloricon = empty($accountlabel) ? '#ddd' : '#b0bb39';
-						$labeltoshow = empty($accountlabel) ? '<span class="opacitymedium">Compte inexistant</span>' : $accountlabel;
-						print '<li>';
-							print '<div class="flexline">';
-								print '<div>';
-									print '<span class="fas fa-circle paddingright" style="color: '.$coloricon.';font-size: 0.5em;"></span> <b>'.$accountnumber.'<span class="opacitymedium">XXX</span></b> - ';
+			var urlUpdate = "<?php echo dol_buildpath('ezcompta/ajax/accountingaccount_activate.php',1); ?>";
+			$.ajax(
+				urlUpdate,
+				{
+					async: true,
+					method:'POST',
+					dataType: "json",
+					data: {
+						token : '<?php echo newToken(); ?>',
+						toggleaction : toggleaction,
+						accountid : accountid,
 
-									if ($action == 'editaccount' && GETPOST('accountnumber') == $accountnumber) {
-										print '<input type="text" name="" value="'.$accountlabel.'" class="minwidth400">';
-									} else {
-										print $labeltoshow;
-										print '<a href="'.$_SERVER['PHP_SELF'].'?action=editaccount&accountnumber='.$accountnumber.'"><span class="fas fa-pen" style="margin-left:12px;opacity:0.1"></span></a>';
-									}
-								print '</div>';
-								print '<div>';
-								if ($action == 'editaccount' && GETPOST('accountnumber') == $accountnumber) {
-									print '<a href="'.$_SERVER['PHP_SELF'].'"><span class="fas fa-times paddingright" style="color:#f00"></span></a> ';
-									print '<span class="fas fa-check paddingleft" style="color:#55a580"></span> ';
-								} else {
-									if (!empty($accountlabel)) {
-										print '<span class="fas fa-eye paddingright paddingleft" style="opacity:0.9; color:#ccc"></span>';
-									}
-								}
-								print '</div>';
-								//print '<div><span class="fas fa-ellipsis-v paddingright"></span></div>';
-							print '</div>';
-						print '</li>';
 					}
-					?>
-				</ul>
-			</li>
-			<li>
-				<div class="account-cardline-header">
-					<div class="cardline-header-title"><span class="fas fa-clipboard-list paddingright"></span> <b>22<span class="opacitymedium">XXXX</span></b> - Immobilisations mises en concession <a href="#"><span class="fas fa-pen" style="margin-left:12px;color:#ddd;"></span></a></div>
-					<div class="cardline-header-actions"><span class="fas fa-chevron-down paddingright"></span></div>
-				</div>
-			</li>
-			<li>
-				<div class="account-cardline-header">
-					<div class="cardline-header-title"><span class="fas fa-clipboard-list paddingright"></span> <b>23<span class="opacitymedium">XXXX</span></b> - Immobilisations en cours, avances et acomptes <a href="#"><span class="fas fa-pen" style="margin-left:12px;color:#ddd;"></span></a></div>
-					<div class="cardline-header-actions"><span class="fas fa-chevron-down paddingright"></span></div>
-				</div>
-			</li>
-			<li>
-				<div class="account-cardline-header">
-					<div class="cardline-header-title"><span class="fas fa-clipboard-list paddingright" style="color:#ddd;"></span> <b>24<span class="opacitymedium">XXXX</span></b> - <span class="opacitymedium">Compte inexistant</span> <a href="#"><span class="fas fa-pen" style="margin-left:12px;color:#ddd;"></span></a></div>
-					<div class="cardline-header-actions"></div>
-				</div>
-			</li>
-			<li>
-				<div class="account-cardline-header">
-					<div class="cardline-header-title"><span class="fas fa-clipboard-list paddingright" style="color:#ddd;"></span> <b>25<span class="opacitymedium">XXXX</span></b> - <span class="opacitymedium">Compte inexistant</span> <a href="#"><span class="fas fa-pen" style="margin-left:12px;color:#ddd;"></span></a></div>
-					<div class="cardline-header-actions"></div>
-				</div>
-			</li>
-			<li>
-				<div class="account-cardline-header">
-					<div class="cardline-header-title"><span class="fas fa-clipboard-list paddingright"></span> <b>26<span class="opacitymedium">XXXX</span></b> - <span class="opacitymedium">participations et créances rattachées a des participations </span> <a href="#"><span class="fas fa-pen" style="margin-left:12px;color:#ddd;"></span></a></div>
-					<div class="cardline-header-actions"><span class="fas fa-chevron-down paddingright"></span></div>
-				</div>
-				<ul class="open">
-					<li>
-						<div class="flexline">
-							<div>
-								<span class="fas fa-circle paddingright" style="color: #b0bb39;font-size: 0.5em;"></span> <b>261<span class="opacitymedium">XXX</span></b> - Titres de participation
-							</div>
-							<div>
-								<span class="fas fa-eye-slash paddingright paddingleft" style="opacity:0.9; color:#b0bb39"></span>
-							</div>
-						</div>
-						<ul class="lvl2 open">
-							<li>Account 2611XX <a href="#"><span class="fas fa-pen" style="margin-left:12px;color:#ddd;"></span></a></li>
-							<li>Account 2618XX <a href="#"><span class="fas fa-pen" style="margin-left:12px;color:#ddd;"></span></a></li>
-						</ul>
-					</li>
-					<li>
-						<div class="flexline">
-							<div>
-								<span class="fas fa-circle paddingright" style="color: #b0bb39;font-size: 0.5em;"></span> <b>262<span class="opacitymedium">XXX</span></b> - Titres évalués par équivalence 
-							</div>
-							<div>
-								<span class="fas fa-eye paddingright paddingleft" style="opacity:0.9; color:#ccc"></span>
-							</div>
-						</div>
-					</li>
-					<li>
-						<div class="flexline">
-							<div>
-								<span class="fas fa-circle paddingright" style="color: #ddd;font-size: 0.5em;"></span> <b>263<span class="opacitymedium">XXX</span></b> - <span class="opacitymedium">Compte inexistant</span>
-							</div>
-							<div>
-								<span class="fas fa-eye paddingright paddingleft" style="opacity:0.9; color:#ccc"></span>
-							</div>
-						</div>
-					</li>
-					<li>
-						<div class="flexline">
-							<div>
-								<span class="fas fa-circle paddingright" style="color: #ddd;font-size: 0.5em;"></span> <b>264<span class="opacitymedium">XXX</span></b> - <span class="opacitymedium">Compte inexistant</span>
-							</div>
-							<div>
-								<span class="fas fa-eye paddingright paddingleft" style="opacity:0.9; color:#ccc"></span>
-							</div>
-						</div>
-					</li>
-					<li>
-						<div class="flexline">
-							<div>
-								<span class="fas fa-circle paddingright" style="color: #ddd;font-size: 0.5em;"></span> <b>265<span class="opacitymedium">XXX</span></b> - <span class="opacitymedium">Compte inexistant</span>
-							</div>
-							<div>
-								<span class="fas fa-eye paddingright paddingleft" style="opacity:0.9; color:#ccc"></span>
-							</div>
-						</div>
-					</li>
-					<li>
-						<div class="flexline">
-							<div>
-								<span class="fas fa-circle paddingright" style="color: #b0bb29;font-size: 0.5em;"></span> <b>266<span class="opacitymedium">XXX</span></b> - Autres formes de participation
-							</div>
-							<div>
-								<span class="fas fa-eye paddingright paddingleft" style="opacity:0.9; color:#ccc"></span>
-							</div>
-						</div>
-					</li>
-				</ul>
-			</li>
-		</ul>
-	</div>
+				}
+			).done(function(data){
+				if (data.success) {
+					if (toggleaction === 'enable') {
+						$('#line-' + target).find('.toggle-icon').html(toggle_on);
+					} else if (toggleaction === 'disable') {
+						$('#line-' + target).find('.toggle-icon').html(toggle_off);
+					}
+				}
+			});
+		});
 
-</div>
+		// EDIT
+		$(document).on('click', '.edit-account-label', function(e){
+			e.preventDefault();
+
+			var target = $(this).data('target');
+			var label = $('#line-'+target).data('label');
+			var level = $('#line-'+target).data('level');
+			var buttons = '<a class="button-editline cancel" data-target="'+target+'" href="'+link+'"><span class="fas fa-times paddingright"></span></a>';
+			buttons += ' <button class="button-editline" type="submit" data-target="'+target+'"><span class="fas fa-check paddingleft"></span></button>';
+			//
+			$(this).remove();
+			$('#line-'+target).find('.account-label').html('<input type="text" name="accountlabel" value="' + label + '" class="minwidth500 input-nobottom">');
+			if (level == 2) {
+				$('#line-'+target).find('.cardline-header-actions').html(buttons);
+			} else {
+				$('#line-'+target).find('.flexline-actions').html(buttons);
+			}
+		});
+
+		// CANCEL EDIT
+		$(document).on('click', '.button-editline.cancel', function(e) {
+			e.preventDefault();
+			var target = $(this).data('target');
+			var label = $('#line-'+target).data('label');
+			var level = $('#line-'+target).data('level');
+			var accountexist = $('#line-'+target).data('accountexist');
+
+			var buttons = '';
+			if (accountexist) {
+				buttons += '<span class="fas fa-ellipsis-v paddingright paddingleft moreactions"></span>';
+				buttons += '<span class="fas fa-chevron-down paddingleft toggleview" data-target="'+ target +'" style="margin-left:12px;"></span>';
+			}
+
+			if (label == '') {
+				label = emptylabel;
+			}
+
+			var after = '<a class="edit-account-label" href="'+link+'&action=editaccount&accountnumber='+target+'&token='+token+'" data-target="'+target+'">';
+				after += '<span class="fas fa-pen" style="margin-left:12px;opacity:0.1"></span>';
+			after += '</a>';
+
+			$('#line-' + target).find('.account-label').html(label);
+			$('#line-' + target).find('.account-label').after(after);
+			if (level == 2) {
+				$('#line-'+target).find('.cardline-header-actions').html(buttons);
+			} else {
+				$('#line-'+target).find('.flexline-actions').html(buttons);
+			}
+		});
+
+		// SUBMIT EDIT
+		$(document).on('click', 'button[type=submit].button-editline', function(e) {
+			e.preventDefault();
+			//alert(' AJAX CALL to register newValue and after show it + animate it');
+
+			var target = $(this).data('target');
+			var newLabel = $('#line-'+target).find('input[name="accountlabel"]').val();
+			var parentID = $('#line-'+target).data('parent');
+			var pcgtype = $('#line-'+target).data('pcgtype');
+			var level = $('#line-'+target).data('level');
+
+			console.log(level);
+
+			var buttons = '';
+			buttons += '<span class="fas fa-ellipsis-v paddingright paddingleft moreactions"></span>';
+			buttons += '<span class="fas fa-chevron-down paddingleft toggleview" data-target="'+ target +'" style="margin-left:12px;"></span>';
+
+			var urlUpdate = "<?php echo dol_buildpath('ezcompta/ajax/accountingaccount_editlabel.php',1); ?>";
+			$.ajax(
+				urlUpdate,
+				{
+					async: true,
+					method:'POST',
+					dataType: "json",
+					data: {
+						token : '<?php echo newToken(); ?>',
+						pcg_version : '<?php echo $accountancySystem->pcg_version; ?>',
+						newlabel : newLabel,
+						accountnumber : target,
+						parentid : parentID,
+						pcg_type : pcgtype,
+						level : level,
+					}
+				}
+			).done(function(data){
+				if (data.success) {
+
+					var toggleicon = '';
+					if (data.active) {
+						toggleicon += '<a class="reposition toggle-account" href="'+link+'&id='+data.accountid+'&action=disable&mode=0&token='+token+'" data-toggle="disable" data-target="'+target+'" data-accountid="'+data.accountid+'">';
+						toggleicon += '<span class="fas fa-toggle-on paddingright" style="color: #681bb5;font-size: 1em;"></span>';
+						toggleicon += '</a>';
+					} else {
+						toggleicon += '<a class="reposition toggle-account" href="'+link+'&id='+data.accountid+'&action=enable&mode=0&token='+token+'" data-toggle="disable" data-target="'+target+'" data-accountid="'+data.accountid+'">';
+						toggleicon += '<span class="fas fa-toggle-off paddingright" style="color: #ccc;font-size: 1em;"></span>';
+						toggleicon += '</a>';
+					}
+
+					var after = '<a class="edit-account-label" href="'+link+'&action=editaccount&accountnumber='+data.account_number+'&token='+token+'" data-target="'+data.account_number+'">';
+					after += '<span class="fas fa-pen" style="margin-left:12px;opacity:0.1"></span>';
+					after += '</a>';
+
+					$('#line-' + target).data('label', data.label);
+					$('#line-' + target).find('.toggle-icon').html(toggleicon);
+					$('#line-' + target).find('.account-label').html(data.label).after(after);
+					if (level == 2) {
+						$('#line-' + target).find('.cardline-header-actions').html(buttons);
+					} else {
+						$('#line-' + target).find('.flexline-actions').html(buttons);
+					}
+
+					if (data.action === 'update' && $('#subaccountlist-' + target).hasClass('open')) {
+						if (level == 2) {
+							$('#line-' + target).find('.cardline-header-actions .fas.fa-chevron-down').removeClass('fa-chevron-down').addClass('fa-chevron-up');
+						} else {
+							$('#line-' + target).find('.flexline-actions .fas.fa-chevron-down').removeClass('fa-chevron-down').addClass('fa-chevron-up');
+						}
+					}
+					// todo: si create, je dois créér la liste en dessous
+					if (data.action === 'create' && data.sublist) {
+
+						if (level > 2) {
+							var a = '<ul class="subaccountlist level-'+level+'" id="subaccountlist-'+data.account_number+'">';
+							a += data.sublist;
+							a += '</ul>';
+						} else {
+							var a = '<ul class="firstlevel" id="subaccountlist-'+data.account_number+'">';
+							a += data.sublist;
+							a += '</ul>';
+						}
+						$('#line-' + target).after(a);
+					}
+				} else {
+					console.warn(data.error);
+				}
+			});
+		});
+
+		//
+		$(document).on('click', '.toggleview', function(e){
+			var target = '#subaccountlist-' + $(this).data('target');
+			$(this).toggleClass('fa-chevron-down fa-chevron-up');
+			$(target).toggleClass('open');
+		});
+	});
+</script>
 
 <?php
-
-
 // End of page
 llxFooter();
 $db->close(); ?>

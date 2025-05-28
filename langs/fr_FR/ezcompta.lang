@@ -18,3 +18,4 @@
 # Dolibarr language file - fr_FR - ezcompta
 
 Module999960Name=EzCompta
+AccountingAccountNotExist=Compte inexistant
