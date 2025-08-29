@@ -17,20 +17,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/agpl-3.0.html>.
  */
 
-function dolipostfinanceAdminPrepareHead()
+function ezcomptaAdminPrepareHead()
 {
 	global $langs, $conf;
 
     $h = 0;
     $head = array();
 
-    $head[$h][0] = dol_buildpath("/dolipostfinance/admin/setup.php", 1);
+    $head[$h][0] = dol_buildpath("/ezcompta/admin/setup.php", 1);
     $head[$h][1] = $langs->trans('Parameters');
     $head[$h][2] = 'settings';
     $h++;
 
-    complete_head_from_modules($conf, $langs, '', $head, $h, 'dolipostfinance_setup');
+	$head[$h][0] = dol_buildpath("/ezcompta/admin/about.php", 1);
+	$head[$h][1] = $langs->trans("About");
+	$head[$h][2] = 'about';
+	$h++;
+
+	complete_head_from_modules($conf, $langs, null, $head, $h, 'ezcompta@ezcompta');
+
+	complete_head_from_modules($conf, $langs, null, $head, $h, 'ezcompta@ezcompta', 'remove');
     return $head;
 }
-
-?>
