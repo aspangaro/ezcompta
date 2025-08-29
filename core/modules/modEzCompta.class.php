@@ -114,7 +114,7 @@ class ModEzCompta extends DolibarrModules
         $this->dirs = array();
 
         // Config pages. Put here list of php page, stored into mymodule/admin directory, to use to setup module.
-        $this->config_page_url = "";
+        $this->config_page_url = "setup.php@ezcompta";
 
         // Dependencies
         $this->hidden = false;          // A condition to hide module
@@ -229,6 +229,21 @@ class ModEzCompta extends DolibarrModules
             'user'=>0,
             'prefix' => '<span class="fas fa-book paddingright pictofixedwidth" style="color: #681bb5;"></span> '
         );
+
+		$this->menu[$r++]=array(
+			'fk_menu' => 'fk_mainmenu=accountancy,fk_leftmenu=ezcompta',	    // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
+			'type' => 'left',			                // This is a Left menu entry
+			'titre' => 'Rapport E/S bank',
+			'mainmenu' => 'accountancy',
+			'leftmenu' => 'ezcompta_report_in_out',
+			'url' => '/ezcompta/report_in_out.php',
+			'langs' => 'ezcompta@ezcompta',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
+			'position' => 1000 + $r,
+			'enabled' => 'isModEnabled("ezcompta")', // Define condition to show or hide menu entry. Use 'isModEnabled("mymodule")' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
+			'perms' => '$user->hasRight("banque", "read")',
+			'target' => '',
+			'user' => 0,				                // 0=Menu for internal users, 1=external users, 2=both
+		);
 
         // Exports
         $r=0;
