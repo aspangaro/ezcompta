@@ -147,15 +147,15 @@ llxHeader('', $title, $helpurl);
 $encaiss = array();
 $decaiss = array();
 if (!empty($bankaccounts)) {
-	$sql = "SELECT SUM(b.amount)";
-	$sql .= ", date_format(b.dateo,'%Y-%m') as dm";
-	$sql .= " FROM " . MAIN_DB_PREFIX . "bank as b";
+	$sql = "SELECT SUM(b.amount_credit)";
+	$sql .= ", date_format(b.bdate,'%Y-%m') as dm";
+	$sql .= " FROM " . MAIN_DB_PREFIX . "bank_import as b";
 	$sql .= ", " . MAIN_DB_PREFIX . "bank_account as ba";
-	$sql .= " WHERE b.fk_account = ba.rowid";
+	$sql .= " WHERE b.id_account = ba.rowid";
 	$sql .= " AND ba.entity IN (" . getEntity('bank_account') . ")";
-	$sql .= " AND b.amount >= 0";
+	$sql .= " AND b.amount_credit >= 0";
 
-	$sql .= " AND b.fk_account IN (" . $db->sanitize($db->escape(implode(',', $bankaccounts))) . ")";
+	$sql .= " AND b.id_account IN (" . $db->sanitize($db->escape(implode(',', $bankaccounts))) . ")";
 
 	$sql .= " GROUP BY dm";
 
@@ -173,14 +173,14 @@ if (!empty($bankaccounts)) {
 		dol_print_error($db);
 	}
 
-	$sql = "SELECT SUM(b.amount)";
-	$sql .= ", date_format(b.dateo,'%Y-%m') as dm";
-	$sql .= " FROM " . MAIN_DB_PREFIX . "bank as b";
+	$sql = "SELECT SUM(b.amount_debit)";
+	$sql .= ", date_format(b.bdate,'%Y-%m') as dm";
+	$sql .= " FROM " . MAIN_DB_PREFIX . "bank_import as b";
 	$sql .= ", " . MAIN_DB_PREFIX . "bank_account as ba";
-	$sql .= " WHERE b.fk_account = ba.rowid";
+	$sql .= " WHERE b.id_account = ba.rowid";
 	$sql .= " AND ba.entity IN (" . getEntity('bank_account') . ")";
-	$sql .= " AND b.amount <= 0";
-	$sql .= " AND b.fk_account IN (" . $db->sanitize($db->escape(implode(',', $bankaccounts))) . ")";
+	$sql .= " AND b.amount_debit <= 0";
+	$sql .= " AND b.id_account IN (" . $db->sanitize($db->escape(implode(',', $bankaccounts))) . ")";
 	$sql .= " GROUP BY dm";
 
 	$resql = $db->query($sql);
@@ -213,7 +213,7 @@ $link = ($year_start ? '<a href="'.$_SERVER["PHP_SELF"].'?'.$parambk.'&year_star
 $linkback='';
 $morehtmlref = '';
 
-print $langs->trans("Accounts");
+print $langs->trans("FinancialAccount");
 print '<form method="POST" id="searchFormList" action="'.$_SERVER["PHP_SELF"].'">'."\n";
 if ($optioncss != '') {
 	print '<input type="hidden" name="optioncss" value="'.$optioncss.'">';
@@ -295,26 +295,26 @@ print '<br>';
 
 
 // Current balance
-$balance = 0;
-if (!empty($bankaccounts)) {
-	$sql = "SELECT SUM(b.amount) as total";
-	$sql .= " FROM " . MAIN_DB_PREFIX . "bank as b";
-	$sql .= ", " . MAIN_DB_PREFIX . "bank_account as ba";
-	$sql .= " WHERE b.fk_account = ba.rowid";
-	$sql .= " AND ba.entity IN (" . getEntity('bank_account') . ")";
-	$sql .= " AND b.fk_account IN (" . $db->sanitize($db->escape(implode(',', $bankaccounts))) . ")";
-
-
-	$resql = $db->query($sql);
-	if ($resql) {
-		$obj = $db->fetch_object($resql);
-		if ($obj) {
-			$balance = $obj->total;
-		}
-	} else {
-		dol_print_error($db);
-	}
-}
+//$balance = 0;
+//if (!empty($bankaccounts)) {
+//	$sql = "SELECT SUM(b.amount_credit) as total";
+//	$sql .= " FROM " . MAIN_DB_PREFIX . "bank_import as b";
+//	$sql .= ", " . MAIN_DB_PREFIX . "bank_account as ba";
+//	$sql .= " WHERE b.fk_account = ba.rowid";
+//	$sql .= " AND ba.entity IN (" . getEntity('bank_account') . ")";
+//	$sql .= " AND b.fk_account IN (" . $db->sanitize($db->escape(implode(',', $bankaccounts))) . ")";
+//
+//
+//	$resql = $db->query($sql);
+//	if ($resql) {
+//		$obj = $db->fetch_object($resql);
+//		if ($obj) {
+//			$balance = $obj->total;
+//		}
+//	} else {
+//		dol_print_error($db);
+//	}
+//}
 //print '<table class="noborder centpercent">';
 //
 //$nbcol = '';
