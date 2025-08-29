@@ -225,7 +225,7 @@ if ($action == "update") {
                             vdate, date_scraped, original_amount, original_currency, amount_credit, amount_debit,
                             deleted_date, fk_duplicate_of, status, datec, tms, fk_user_author, fk_user_modif,
                             import_key, datas)
-SELECT b4a.fk_bank_account
+SELECT b4a.fk_bank_account,
        bkr.record_type,
        bkr.label,
        bkr.sub_record_type,
@@ -262,7 +262,7 @@ WHERE bkr.amount > 0
                             vdate, date_scraped, original_amount, original_currency, amount_credit, amount_debit,
                             deleted_date, fk_duplicate_of, status, datec, tms, fk_user_author, fk_user_modif,
                             import_key, datas)
-SELECT b4a.fk_bank_account
+SELECT b4a.fk_bank_account,
        bkr.record_type,
        bkr.label,
        bkr.sub_record_type,
