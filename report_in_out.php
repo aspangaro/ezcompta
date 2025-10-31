@@ -5,6 +5,7 @@
  * Copyright (C) 2013-2023  Charlene BENKE          <charlene@patas-monkey.com>
  * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
  * Copyright (C) 2024		Frédéric France			<frederic.france@free.fr>
+ * Copyright (C) 2025		Florian HENRY			<florian.henry@scopen.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,12 +22,12 @@
  */
 
 /**
-	 *		\file        htdocs/compta/bank/annuel.php
- *		\ingroup     banque
+ *		\file	     ezcompta/report_in_out.php
+ *		\ingroup     ezcompta
  *		\brief       Page to report input-output of a bank account
  */
 
-// Load Dolibarr environment
+
 // Load Dolibarr environment
 $res = 0;
 // Try main.inc.php into web root known defined into CONTEXT_DOCUMENT_ROOT (not always defined)
@@ -74,6 +75,8 @@ dol_include_once('/ezcompta/class/html.formezcompta.class.php');
  * @var User $user
  */
 
+//inspired from htdocs/compta/bank/annuel.php
+
 // Load translation files required by the page
 $langs->loadLangs(array('banks', 'categories'));
 
@@ -119,16 +122,6 @@ $error = 0;
 
 $form = new Form($db);
 $fromezcompta = new FormEzCompta($db);
-// Get account information
-//$object = new Account($db);
-//if ($id > 0 && !preg_match('/,/', $id)) {	// if for a particular account and not a list
-//	$result = $object->fetch($id);
-//	$id = $object->id;
-//}
-//if (!empty($ref)) {
-//	$result = $object->fetch(0, $ref);
-//	$id = $object->id;
-//}
 
 if (empty($bankaccounts)) {
 	$bankaccounts = array_keys($fromezcompta->getBankAccounts());
@@ -209,7 +202,6 @@ if (!empty($bankaccounts)) {
 }
 $link = ($year_start ? '<a href="'.$_SERVER["PHP_SELF"].'?'.$parambk.'&year_start='.($year_start - 1).'">'.img_previous('', 'class="valignbottom"')."</a> ".$langs->trans("Year").' <a href="'.$_SERVER["PHP_SELF"].'?'.$parambk.'&year_start='.($year_start + 1).'">'.img_next('', 'class="valignbottom"').'</a>' : '');
 
-//$linkback = '<a href="'.DOL_URL_ROOT.'/compta/bank/list.php?restore_lastsearch_values=1">'.$langs->trans("BackToList").'</a>';
 $linkback='';
 $morehtmlref = '';
 
@@ -260,7 +252,7 @@ for ($annee = $year_start; $annee <= $year_end_for_table; $annee++) {
 	$totsorties[$annee] = 0;
 	$totentrees[$annee] = 0;
 }
-$nb_mois_decalage = $conf->global->SOCIETE_FISCAL_MONTH_START ? ($conf->global->SOCIETE_FISCAL_MONTH_START - 1) : 0;
+$nb_mois_decalage = getDolGlobalInt('SOCIETE_FISCAL_MONTH_START') ? (getDolGlobalInt('SOCIETE_FISCAL_MONTH_START')	 - 1) : 0;
 for ($mois = 1 + $nb_mois_decalage; $mois <= 12 + $nb_mois_decalage; $mois++) {
 	$mois_modulo = $mois;
 	if ($mois > 12) {
@@ -303,12 +295,9 @@ for ($annee = $year_start; $annee <= $year_end_for_table; $annee++) {
 print "</tr>\n";
 
 print "</table>";
+
 print "</div>";
 
-print '<br>';
-
-
-print "\n</div><br>\n";
 
 // End of page
 llxFooter();
