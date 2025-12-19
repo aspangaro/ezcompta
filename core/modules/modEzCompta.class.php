@@ -220,7 +220,7 @@ class ModEzCompta extends DolibarrModules
             'titre'=> $langs->trans('EzCompta'),
             'mainmenu'=>'accountancy',
             'leftmenu'=>'ezcompta',
-            'url'=> '/ezcompta/index.php',
+            'url'=> '/ezcompta/ezcompta_index.php',
             'langs'=>'ezcompta@ezcompta',
             'position'=> $this->module_position + $r,
             'enabled' => 'isModEnabled("ezcompta")',
@@ -229,6 +229,22 @@ class ModEzCompta extends DolibarrModules
             'user'=>0,
             'prefix' => '<span class="fas fa-book paddingright pictofixedwidth" style="color: #681bb5;"></span> '
         );
+
+		$this->menu[$r++]=array(
+			'fk_menu'=>'fk_mainmenu=accountancy,fk_leftmenu=ezcompta',
+			'type'=>'left',
+			'titre'=> $langs->trans('EzCompta'),
+			'mainmenu'=>'accountancy',
+			'leftmenu'=>'ezcompta_account',
+			'url'=> '/ezcompta/ezcompta_account_treeview.php',
+			'langs'=>'ezcompta@ezcompta',
+			'position'=> $this->module_position + $r,
+			'enabled' => 'isModEnabled("ezcompta")',
+			'perms' => '$user->hasRight("accounting","chartofaccount")',
+			'target'=>'',
+			'user'=>0,
+			'prefix' => '<span class="fas fa-book paddingright pictofixedwidth" style="color: #681bb5;"></span> '
+		);
 
 		$this->menu[$r++]=array(
 			'fk_menu' => 'fk_mainmenu=accountancy,fk_leftmenu=ezcompta',	    // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode

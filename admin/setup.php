@@ -188,7 +188,7 @@ if (!$user->admin) {
 
 // Setup conf for selection of a simple string input
 if (isModEnabled("banking4dolibarr")) {
-	$formSetup->newItem('Copy Data')->setAsTitle();
+	//$formSetup->newItem('Copy Data')->setAsTitle();
 }
 
 // End of definition of parameters
@@ -220,81 +220,7 @@ $setupnotempty += count($formSetup->items);
 //}
 //
 //include DOL_DOCUMENT_ROOT.'/core/actions_setmoduleoptions.inc.php';
-if ($action == "update") {
-	$sql = "INSERT INTO ".$db->prefix()."bank_import(id_account, record_type, label, record_type_origin, label_origin, comment, note, bdate,
-                            vdate, date_scraped, original_amount, original_currency, amount_credit, amount_debit,
-                            deleted_date, fk_duplicate_of, status, datec, tms, fk_user_author, fk_user_modif,
-                            import_key, datas)
-SELECT b4a.fk_bank_account,
-       bkr.record_type,
-       bkr.label,
-       bkr.sub_record_type,
-       bkr.label,
-       bkr.comment,
-       bkr.note,
-       bkr.bdate,
-       bkr.vdate,
-       bkr.date_scraped,
-       bkr.original_amount,
-       bkr.original_currency,
-       bkr.amount,
-       0,
-       bkr.deleted_date,
-       bkr.fk_duplicate_of,
-       bkr.status,
-       bkr.datec,
-       bkr.tms,
-       bkr.fk_user_author,
-       bkr.fk_user_modif,
-       bkr.id_record,
-       bkr.datas
-FROM ".$db->prefix()."banking4dolibarr_bank_record as bkr
-INNER JOIN ".$db->prefix()."c_banking4dolibarr_bank_account as b4a ON b4a.rowid = bkr.id_account
-WHERE bkr.amount > 0
-  AND bkr.id_record NOT IN (SELECT import_key FROM ".$db->prefix()."bank_import)";
 
-	$resql = $db->query($sql);
-	if (!$resql) {
-		setEventMessages($db->error(), null, 'errors');
-	}
-
-	$sql = "INSERT INTO ".$db->prefix()."bank_import(id_account, record_type, label, record_type_origin, label_origin, comment, note, bdate,
-                            vdate, date_scraped, original_amount, original_currency, amount_credit, amount_debit,
-                            deleted_date, fk_duplicate_of, status, datec, tms, fk_user_author, fk_user_modif,
-                            import_key, datas)
-SELECT b4a.fk_bank_account,
-       bkr.record_type,
-       bkr.label,
-       bkr.sub_record_type,
-       bkr.label,
-       bkr.comment,
-       bkr.note,
-       bkr.bdate,
-       bkr.vdate,
-       bkr.date_scraped,
-       bkr.original_amount,
-       bkr.original_currency,
-       0,
-       bkr.amount,
-       bkr.deleted_date,
-       bkr.fk_duplicate_of,
-       bkr.status,
-       bkr.datec,
-       bkr.tms,
-       bkr.fk_user_author,
-       bkr.fk_user_modif,
-       bkr.id_record,
-       bkr.datas
-FROM ".$db->prefix()."banking4dolibarr_bank_record as bkr
-INNER JOIN ".$db->prefix()."c_banking4dolibarr_bank_account as b4a ON b4a.rowid = bkr.id_account
-WHERE bkr.amount < 0
-  AND bkr.id_record NOT IN (SELECT import_key FROM ".$db->prefix()."bank_import)";
-
-	$resql = $db->query($sql);
-	if (!$resql) {
-		setEventMessages($db->error(), null, 'errors');
-	}
-}
 //if ($action == 'updateMask') {
 //	$maskconst = GETPOST('maskconst', 'aZ09');
 //	$maskvalue = GETPOST('maskvalue', 'alpha');
@@ -430,7 +356,7 @@ echo '<span class="opacitymedium">' . $langs->trans("EzcomptaSetupPage") . '</sp
  }
  */
 if (!empty($formSetup->items)) {
-	print $formSetup->generateOutput(true);
+	//print $formSetup->generateOutput(true);
 	print '<br>';
 }
 
