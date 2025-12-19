@@ -127,7 +127,7 @@ WHERE bkr.amount > 0
 	if (!$resql) {
 		setEventMessages($db->error(), null, 'errors');
 	} else {
-		setEventMessages($langs->trans('EzComptaRecordsInserted',$db->num_rows($resql),$langs->transnoentities('AccountingCredit')), null);
+		setEventMessages($langs->trans('EzComptaRecordsInserted',$db->db->affected_rows,$langs->transnoentities('AccountingCredit')), null);
 	}
 
 	$sql = "INSERT INTO ".$db->prefix()."bank_import(id_account, record_type, label, record_type_origin, label_origin, comment, note, bdate,
@@ -166,7 +166,7 @@ WHERE bkr.amount < 0
 	if (!$resql) {
 		setEventMessages($db->error(), null, 'errors');
 	} else {
-		setEventMessages($langs->trans('EzComptaRecordsInserted',$db->num_rows($resql),$langs->transnoentities('AccountingDebit')), null);
+		setEventMessages($langs->trans('EzComptaRecordsInserted',$db->db->affected_rows,$langs->transnoentities('AccountingDebit')), null);
 	}
 }
 
