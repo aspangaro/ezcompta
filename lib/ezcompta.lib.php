@@ -29,6 +29,11 @@ function ezcomptaAdminPrepareHead()
     $head[$h][2] = 'settings';
     $h++;
 
+	$head[$h][0] = dol_buildpath("/ezcompta/admin/bankstatement_extrafields.php", 1);
+	$head[$h][1] = $langs->trans("Extrafields");
+	$head[$h][2] = 'bankstatement_extrafields';
+	$h++;
+
 	$head[$h][0] = dol_buildpath("/ezcompta/admin/about.php", 1);
 	$head[$h][1] = $langs->trans("About");
 	$head[$h][2] = 'about';
