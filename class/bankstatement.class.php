@@ -584,7 +584,7 @@ class BankStatement extends CommonObject
 
 			if (!$error && !$notrigger) {
 				// Call trigger
-				$result = $this->call_trigger('MYOBJECT_VALIDATE', $user);
+				$result = $this->call_trigger('BANKSTATEMENT_VALIDATE', $user);
 				if ($result < 0) {
 					$error++;
 				}
@@ -674,7 +674,7 @@ class BankStatement extends CommonObject
 		 return -1;
 		 }*/
 
-		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'EZCOMPTA_MYOBJECT_UNVALIDATE');
+		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'EZCOMPTA_BANKSTATEMENT_UNVALIDATE');
 	}
 
 	/**
@@ -698,7 +698,7 @@ class BankStatement extends CommonObject
 		 return -1;
 		 }*/
 
-		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'EZCOMPTA_MYOBJECT_CANCEL');
+		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'EZCOMPTA_BANKSTATEMENT_CANCEL');
 	}
 
 	/**
@@ -722,7 +722,7 @@ class BankStatement extends CommonObject
 		 return -1;
 		 }*/
 
-		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'EZCOMPTA_MYOBJECT_REOPEN');
+		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'EZCOMPTA_BANKSTATEMENT_REOPEN');
 	}
 
 	/**
@@ -1077,15 +1077,15 @@ class BankStatement extends CommonObject
 		global $langs, $conf;
 		$langs->load("ezcompta@ezcompta");
 
-		if (!getDolGlobalString('EZCOMPTA_MYOBJECT_ADDON')) {
-			$conf->global->EZCOMPTA_MYOBJECT_ADDON = 'mod_bankstatement_standard';
+		if (!getDolGlobalString('EZCOMPTA_BANKSTATEMENT_ADDON')) {
+			$conf->global->EZCOMPTA_BANKSTATEMENT_ADDON = 'mod_bankstatement_standard';
 		}
 
-		if (getDolGlobalString('EZCOMPTA_MYOBJECT_ADDON')) {
+		if (getDolGlobalString('EZCOMPTA_BANKSTATEMENT_ADDON')) {
 			$mybool = false;
 
-			$file = getDolGlobalString('EZCOMPTA_MYOBJECT_ADDON').".php";
-			$classname = getDolGlobalString('EZCOMPTA_MYOBJECT_ADDON');
+			$file = getDolGlobalString('EZCOMPTA_BANKSTATEMENT_ADDON').".php";
+			$classname = getDolGlobalString('EZCOMPTA_BANKSTATEMENT_ADDON');
 
 			// Include file with class
 			$dirmodels = array_merge(array('/'), (array) $conf->modules_parts['models']);
@@ -1139,7 +1139,7 @@ class BankStatement extends CommonObject
 		global $langs;
 
 		$result = 0;
-		$includedocgeneration = 1;
+		$includedocgeneration = 0;
 
 		$langs->load("ezcompta@ezcompta");
 
@@ -1148,8 +1148,8 @@ class BankStatement extends CommonObject
 
 			if (!empty($this->model_pdf)) {
 				$modele = $this->model_pdf;
-			} elseif (getDolGlobalString('MYOBJECT_ADDON_PDF')) {
-				$modele = getDolGlobalString('MYOBJECT_ADDON_PDF');
+			} elseif (getDolGlobalString('BANKSTATEMENT_ADDON_PDF')) {
+				$modele = getDolGlobalString('BANKSTATEMENT_ADDON_PDF');
 			}
 		}
 
