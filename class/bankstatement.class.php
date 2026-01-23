@@ -113,7 +113,7 @@ class BankStatement extends CommonObject
 	 */
 	public $fields = array(
 		"rowid" => array("type" => "integer", "label" => "TechnicalID", "enabled" => "1", 'position' => 10, 'notnull' => 1, "visible" => "-1",),
-		"id_account" => array("type" => "integer", "label" => "Idaccount", "enabled" => "1", 'position' => 15, 'notnull' => 1, "visible" => "-1",),
+		"id_account" => array("type" => "integer:Account:compta/bank/class/account.class.php", "label" => "Idaccount", "enabled" => "1", 'position' => 15, 'notnull' => 1, "visible" => "-1",),
 		"record_type" => array("type" => "varchar(64)", "label" => "Recordtype", "enabled" => "1", 'position' => 20, 'notnull' => 0, "visible" => "-1",),
 		"label" => array("type" => "varchar(255)", "label" => "Label", "enabled" => "1", 'position' => 25, 'notnull' => 1, "visible" => "1", "alwayseditable" => "1", "css" => "minwidth300", "cssview" => "wordbreak", "csslist" => "tdoverflowmax150",),
 		"record_type_origin" => array("type" => "varchar(255)", "label" => "Recordtypeorigin", "enabled" => "1", 'position' => 30, 'notnull' => 1, "visible" => "-1",),
